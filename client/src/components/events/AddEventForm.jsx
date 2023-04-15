@@ -1,6 +1,9 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import axios from 'axios'
 
 const AddEventForm = () => {
+  const navigate = useNavigate()
   const [eventInput, setEventInput] = useState({
     eventName: "",
     description: "",
@@ -14,20 +17,63 @@ const AddEventForm = () => {
     eventURL: "",
     price: 0
   })
+  const [addEventErrorMsg, setAddEventErrorMsg] = useState("")
 
   const handleInput = (e) => {
     const { name, value } = e.target
     setEventInput({...eventInput, [name]: value })
   }
 
-  const handleSubmit = (e) => {
+  const checkErrors = () => {
+    const { eventName, description, eventDate, startTime, endTime, addressLine1, city, postcode, eventURL } = eventInput;
+    if (eventName.length < 4) setAddEventErrorMsg("Please ensure all fields are completed and are valid");
+    if (description.length < 10) setAddEventErrorMsg("Please ensure all fields are completed and are valid");
+    if (!eventDate || !startTime || !endTime) setAddEventErrorMsg("Please ensure all fields are completed and are valid");
+    if (addressLine1.length < 4) {
+        setAddEventErrorMsg("Please ensure all fields are completed and are valid")
+    }
+    if (city.length < 2) {
+        setAddEventErrorMsg("Please ensure all fields are completed and are valid")
+    }
+    if (postcode.length < 6) {
+        setAddEventErrorMsg("Please ensure all fields are completed and are valid")
+    }
+    if (eventURL.length < 8) {
+        setAddEventErrorMsg("Please ensure all fields are completed and are valid")
+    }
+}
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    checkErrors()
+    const { eventName, description, eventDate, startTime, endTime, addressLine1, addressLine2, city, postcode, eventURL, price } = eventInput
+    if (eventName && description && eventDate && startTime && endTime && addressLine1 && addressLine2 && city && postcode && eventURL && price ) {
+      const date = new Date(eventDate).toISOString()
+      const event = {
+        organisationName: "PGM EVENTS S.A",
+        eventName,
+        description,
+        eventDate: date,
+        startTime,
+        endTime,
+        location: {addressLine1, addressLine2, city, postcode},
+        eventURL,
+        price
+      }
+      try {
+        const res = await axios.post(import.meta.env.VITE_APP_EVENTS, event)
+        if(res.status === 201) navigate('/')
+      } catch (error) {
+        console.log(error)
+      }
+    }
   }
 
   return (
     <div className="max-w-7xl py-10 md:py-12 lg:py-14 md:mx-auto">
       <div className="">
         <h1 className="text-center text-xl md:text-2xl lg:text-3xl font-medium tracking-wider pt-6 pb-12 text-zinc-700">Add a new event!</h1>
+        {addEventErrorMsg && <p className="text-center text-red-500 pb-5 font-bold">{addEventErrorMsg}</p>}
       </div>
       <form className="w-11/12 md:w-4/5 lg:w-2/3 mx-auto flex flex-col gap-6 md:gap-8 bg-white text-gray-700 py-6 md:py-14 px-8 md:px-12 rounded-xl text-lg shadow-lg">
         <div className="flex flex-col gap-2">
@@ -36,7 +82,7 @@ const AddEventForm = () => {
         </div>
         <div className="flex flex-col gap-2">
           <label htmlFor="description" className="font-medium text-gray-500">Brief Description</label>
-          <textarea type="text" className="w-full border rounded-lg py-1 px-2 md:py-2 md:px-4 shadow-inner bg-gray-200 focus:bg-white outline-none text-sm" id="description" name="description" placeholder="A brief but queer description" onChange={handleInput} required />
+          <textarea rows={5} type="text" className="w-full border rounded-lg py-1 px-2 md:py-2 md:px-4 shadow-inner bg-gray-200 focus:bg-white outline-none text-sm" id="description" name="description" placeholder="A brief but queer description" onChange={handleInput} required />
         </div>
         <div className="flex flex-col gap-2">
           <label htmlFor="eventDate" className="font-medium text-gray-500">Date of Event</label>
